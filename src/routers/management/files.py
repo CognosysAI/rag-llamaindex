@@ -1,3 +1,5 @@
+import uuid
+
 from fastapi import APIRouter, UploadFile
 from fastapi.responses import JSONResponse
 from src.models.file import File
@@ -15,10 +17,13 @@ def fetch_files(user_id: str) -> list[File]:
 
 
 @r.post("")
-async def add_file(user_id: str, file: UploadFile):
+async def add_file(file: UploadFile, user_id: str | None = None):
     """
     Upload a new file.
     """
+    # generate user id if it's not set
+    if user_id is None:
+        user_id = str(uuid.uuid4())
     res = await FileHandler.upload_file(user_id, file, str(file.filename))
     if isinstance(res, UnsupportedFileExtensionError):
         # Return 400 response with message if the file extension is not supported
