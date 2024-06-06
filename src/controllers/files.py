@@ -46,8 +46,9 @@ class FileHandler:
         if not os.path.exists(user_data_folder):
             os.makedirs(user_data_folder)
 
+        file_content = file if isinstance(file, bytes) else await file.read()
         with open(f"{user_data_folder}/{file_name}", "wb") as f:
-            f.write(await file.read())
+            f.write(file_content)
         # Index the data
         index_all(user_id)
         return File(user_id=user_id, name=file_name, status=FileStatus.UPLOADED)

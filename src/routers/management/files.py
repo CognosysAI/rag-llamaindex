@@ -1,6 +1,8 @@
 import uuid
+import aiohttp
+import io
 
-from fastapi import APIRouter, UploadFile
+from fastapi import Request, APIRouter, UploadFile
 from fastapi.responses import JSONResponse
 from src.models.file import File
 from src.controllers.files import FileHandler, UnsupportedFileExtensionError
@@ -17,14 +19,46 @@ def fetch_files(user_id: str) -> list[File]:
 
 
 @r.post("")
-async def add_file(file: UploadFile, user_id: str | None = None):
+async def add_file(request: Request, file: UploadFile | None = None, user_id: str | None = None):
     """
     Upload a new file.
     """
     # generate user id if it's not set
     if user_id is None:
         user_id = str(uuid.uuid4())
-    res = await FileHandler.upload_file(user_id, file, str(file.filename))
+    
+    body = await request.json()
+    url = body.get("url")
+    fileName = body.get("fileName")
+
+    if file is not None and url is not None:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "error": "InvalidRequest",
+                "message": "Only one of 'file' or 'url' can be provided.",
+            },
+        )
+    elif file is not None:
+        # File upload via form data
+        res = await FileHandler.upload_file(user_id, file, str(file.filename))
+    elif url is not None:
+        # File upload via GCP signed URL
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as response:
+                if response.status == 200:
+                    # Read the file content
+                    file_content = await response.read()
+                    res = await FileHandler.upload_file(user_id, file_content, fileName)
+                        
+                else:
+                    return JSONResponse(
+                        status_code=response.status,
+                        content={
+                            "error": "FileDownloadError",
+                            "message": "Failed to download the file from the provided URL.",
+                        },
+                    )
     if isinstance(res, UnsupportedFileExtensionError):
         # Return 400 response with message if the file extension is not supported
         return JSONResponse(
