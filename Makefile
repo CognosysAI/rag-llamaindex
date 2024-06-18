@@ -23,7 +23,7 @@ build-admin:
 	mkdir -p ./static/admin && cp -r ./admin/out/* ./static/admin/
 	@echo "\nDone!"
 
-build-frontends: build-chat build-admin
+build-frontends: patch-chat
 
 run:
 	poetry run python main.py

@@ -1,5 +1,5 @@
 import os
-from src.tasks.indexing import index_all
+from src.tasks.indexing import index_all, reset_index
 from src.models.file import File, FileStatus, SUPPORTED_FILE_EXTENSIONS
 
 
@@ -61,4 +61,7 @@ class FileHandler:
         user_data_folder = f"data/{user_id}"
         os.remove(f"{user_data_folder}/{file_name}")
         # Re-index the data
-        index_all(user_id)
+        # index_all(user_id)
+
+        # reset the index for the given context
+        reset_index(user_id)

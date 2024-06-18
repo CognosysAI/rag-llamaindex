@@ -12,7 +12,7 @@ def index_all(user_id: str):
    generate_datasource(user_id)
 
 
-def reset_index(user_id: str):
+def reset_index(user_id: str, re_index: bool = False):
     """
     Reset the index by removing the vector store data and STORAGE_DIR then re-indexing the data.
     """
@@ -31,7 +31,7 @@ def reset_index(user_id: str):
     def reset_index_qdrant():
         from app.engine.vectordbs.qdrant import get_vector_store
 
-        store = get_vector_store(collection_name=f"default_{user_id}")
+        store = get_vector_store(user_id)
         store.client.delete_collection(
             store.collection_name,
         )
@@ -55,4 +55,5 @@ def reset_index(user_id: str):
         shutil.rmtree(user_storage_dir)
 
     # Run the indexing
-    index_all(user_id)
+    if re_index:
+        index_all(user_id)

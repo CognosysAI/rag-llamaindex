@@ -53,7 +53,7 @@ async def redirect():
 
 
 app.mount("/api/data", StaticFiles(directory="data"), name="static")
-app.mount("", StaticFiles(directory="static", html=True), name="static")
+# app.mount("", StaticFiles(directory="static", html=True), name="static")
 
 if __name__ == "__main__":
     app_host = os.getenv("APP_HOST", "0.0.0.0")
