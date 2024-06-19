@@ -161,9 +161,9 @@ async def chat_request(
 ) -> _Result:
     last_message_content, messages = await parse_chat_data(data)
 
-    top_k = await determine_top_k(last_message_content)
+    # top_k = await determine_top_k(last_message_content)
 
-    chat_engine = get_chat_engine(user_id, top_k)
+    # chat_engine = get_chat_engine(user_id, top_k)
 
     response = await chat_engine.achat(last_message_content, messages)
     return _Result(
