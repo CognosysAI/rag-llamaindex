@@ -1,3 +1,5 @@
+import json
+
 from pydantic import BaseModel
 from typing import List, Any, Optional, Dict, Tuple
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -8,6 +10,7 @@ from app.engine import get_chat_engine
 from app.api.routers.vercel_response import VercelStreamResponse
 from app.api.routers.messaging import EventCallbackHandler
 from aiostream import stream
+from llama_index.llms.openai import OpenAI
 
 chat_router = r = APIRouter()
 
@@ -81,6 +84,21 @@ async def parse_chat_data(data: _ChatData) -> Tuple[str, List[ChatMessage]]:
     ]
     return last_message.content, messages
 
+async def determine_top_k(query: str) -> int:
+    llm = OpenAI(model="gpt-4o")
+    prompt = f"""As an AI assistant, you are part of a Retrieval-Augmented Generation (RAG) system. Your role is to determine the optimal number of top documents (top-k) to retrieve for a given query, based on the query's complexity, specificity, and type. The top-k value should balance efficiency with the quality of retrieved information to generate accurate and informative responses.
+        Given the following query, determine whether the optimal number of top documents (top-k) should be 3 or 30 to answer this query effectively. If the query is straightforward and can be answered directly, recommend a top-k of 3. Otherwise, for more complex queries, consider a top-k of 30. Evaluate the complexity, specificity, and type of question to provide the optimal top-k value.
+
+        Query: "{query}"
+
+        Please provide the recommended top-k value as either 3 or 30 in the following JSON format:
+
+        {{"topk": [TOP_K_VALUE]}}"""
+    messages = ChatMessage(role="user", content=prompt)
+    resp = llm.chat([messages], response_format={"type": "json_object"})
+    top_k = json.loads(resp.message.content)["topk"]
+    return top_k
+
 
 # streaming endpoint - delete if not needed
 @r.post("")
@@ -142,6 +160,10 @@ async def chat_request(
     chat_engine: BaseChatEngine = Depends(get_chat_engine),
 ) -> _Result:
     last_message_content, messages = await parse_chat_data(data)
+
+    top_k = await determine_top_k(last_message_content)
+
+    chat_engine = get_chat_engine(user_id, top_k)
 
     response = await chat_engine.achat(last_message_content, messages)
     return _Result(
