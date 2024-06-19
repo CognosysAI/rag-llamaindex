@@ -21,7 +21,7 @@ def get_chat_engine(user_id: str, top_k: Optional[int] = None):
         from llama_index.core.chat_engine import CondensePlusContextChatEngine
 
         return CondensePlusContextChatEngine.from_defaults(
-            retriever=index.as_retriever(top_k=top_k_value),
+            retriever=index.as_retriever(similarity_top_k=top_k_value),
             system_prompt=system_prompt,
             llm=Settings.llm,
         )
