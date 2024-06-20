@@ -67,10 +67,10 @@ app.mount(
 )
 
 # Mount the frontend static files
-app.mount(
-    "",
-    StaticFiles(directory="static", check_dir=False, html=True),
-)
+# app.mount(
+#     "",
+#     StaticFiles(directory="static", check_dir=False, html=True),
+# )
 
 if __name__ == "__main__":
     app_host = os.getenv("APP_HOST", "0.0.0.0")
