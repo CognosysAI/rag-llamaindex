@@ -2,6 +2,8 @@ import os
 from src.tasks.indexing import index_all, reset_index
 from src.models.file import File, FileStatus, SUPPORTED_FILE_EXTENSIONS
 
+from src.controllers.gcs_storage import GCSStorage
+
 
 class UnsupportedFileExtensionError(Exception):
     pass
@@ -14,54 +16,27 @@ class FileNotFoundError(Exception):
 class FileHandler:
 
     @classmethod
-    def get_current_files(cls, user_id: str):
-        """
-        Construct the list files by all the files in the data folder.
-        """
-        user_data_folder = f"data/{user_id}"
-        if not os.path.exists(user_data_folder):
-            return []
-        # Get all files in the data folder
-        file_names = os.listdir(user_data_folder)
-        # Construct list[File]
+    def get_current_files(cls, user_id: str, bucket_name: str, gcs_prefix: str):
+        gcs = GCSStorage(bucket_name)
         return [
-            File(user_id=user_id, name=file_name, status=FileStatus.UPLOADED) 
-            for file_name in file_names
+            File(user_id=user_id, name=file_name, status=FileStatus.UPLOADED)
+            for file_name in gcs.list_files(prefix=f"{gcs_prefix}/{user_id}")
         ]
 
     @classmethod
-    async def upload_file(
-        cls, user_id: str, file, file_name: str
-    ) -> File | UnsupportedFileExtensionError:
-        """
-        Upload a file to the data folder.
-        """
-        # Check if the file extension is supported
-        if file_name.split(".")[-1] not in SUPPORTED_FILE_EXTENSIONS:
-            return UnsupportedFileExtensionError(
-                f"File {file_name} with extension {file_name.split('.')[-1]} is not supported."
-            )
-        # Create data folder if it does not exist
-        user_data_folder = f"data/{user_id}"
-        if not os.path.exists(user_data_folder):
-            os.makedirs(user_data_folder)
+    async def upload_file(cls, user_id: str, bucket_name: str, gcs_prefix: str, file_name: str):
+        gcs = GCSStorage(bucket_name)
+        full_path = f"{gcs_prefix}/{user_id}/{file_name}"
+        
+        # Check if the file exists in GCS
+        if full_path not in gcs.list_files(prefix=f"{gcs_prefix}/{user_id}"):
+            return FileNotFoundError(f"File {file_name} not found in GCS.")
 
-        file_content = file if isinstance(file, bytes) else await file.read()
-        with open(f"{user_data_folder}/{file_name}", "wb") as f:
-            f.write(file_content)
-        # Index the data
-        index_all(user_id)
+        # We don't actually download the file here, just verify its existence
         return File(user_id=user_id, name=file_name, status=FileStatus.UPLOADED)
 
     @classmethod
-    def remove_file(cls, user_id: str, file_name: str) -> None:
-        """
-        Remove a file from the data folder.
-        """
-        user_data_folder = f"data/{user_id}"
-        os.remove(f"{user_data_folder}/{file_name}")
-        # Re-index the data
-        # index_all(user_id)
-
-        # reset the index for the given context
+    def remove_file(cls, user_id: str, bucket_name: str, gcs_prefix: str, file_name: str):
+        # In this case, we're not actually removing the file from GCS
+        # Just removing it from our index
         reset_index(user_id)

@@ -2,6 +2,7 @@ import os
 import logging
 from llama_parse import LlamaParse
 from pydantic import BaseModel, validator
+from src.controllers.gcs_storage import GCSStorage
 
 logger = logging.getLogger(__name__)
 
@@ -9,6 +10,7 @@ logger = logging.getLogger(__name__)
 class FileLoaderConfig(BaseModel):
     data_dir: str = "data"
     use_llama_parse: bool = False
+    gcs_prefix: str
 
     @validator("data_dir")
     def data_dir_must_exist(cls, v):
@@ -29,29 +31,33 @@ def llama_parse_parser():
 
 def get_file_documents(user_id: str, config: FileLoaderConfig):
     from llama_index.core.readers import SimpleDirectoryReader
-    user_data_dir = f"{config.data_dir}/{user_id}"
+    
+    gcs = GCSStorage(config.bucket_name)
+    temp_dir = f"/tmp/{user_id}"
+    os.makedirs(temp_dir, exist_ok=True)
+
     try:
+        files = gcs.list_files(prefix=f"{config.gcs_prefix}/{user_id}")
+        for file in files:
+            gcs.download_file(file, f"{temp_dir}/{os.path.basename(file)}")
+
         reader = SimpleDirectoryReader(
-            user_data_dir,
+            temp_dir,
             recursive=True,
             filename_as_id=True,
         )
         if config.use_llama_parse:
             parser = llama_parse_parser()
             reader.file_extractor = {".pdf": parser}
-        return reader.load_data()
-    except ValueError as e:
-        import sys, traceback
+        
+        documents = reader.load_data()
 
-        # Catch the error if the data dir is empty
-        # and return as empty document list
-        _, _, exc_traceback = sys.exc_info()
-        function_name = traceback.extract_tb(exc_traceback)[-1].name
-        if function_name == "_add_files":
-            logger.warning(
-                f"Failed to load file documents, error message: {e} . Return as empty document list."
-            )
-            return []
-        else:
-            # Raise the error if it is not the case of empty data dir
-            raise e
+        # Clean up temporary files
+        for file in os.listdir(temp_dir):
+            os.remove(f"{temp_dir}/{file}")
+        os.rmdir(temp_dir)
+
+        return documents
+    except Exception as e:
+        logger.error(f"Error loading documents: {str(e)}")
+        return []
