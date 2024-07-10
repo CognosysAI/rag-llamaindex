@@ -1,5 +1,7 @@
-from pydantic import Field, BaseModel
+from typing import Any, Self
+from pydantic import Field, BaseModel, computed_field
 from pydantic_settings import BaseSettings
+from src.models.base_env import BaseEnvConfig
 
 
 class OpenAIConfig(BaseModel):
@@ -7,6 +9,11 @@ class OpenAIConfig(BaseModel):
         default=None,
         description="The OpenAI API key to use",
         env="OPENAI_API_KEY",
+    )
+    openai_api_base: str | None = Field(
+        default=None,
+        description="The base URL for the OpenAI API",
+        env="OPENAI_API_BASE",
     )
 
 
@@ -59,10 +66,28 @@ class AzureOpenAIConfig(BaseModel):
     )
 
 
+class TSystemsConfig(BaseModel):
+    t_systems_llmhub_api_key: str | None = Field(
+        default=None,
+        description="The T-Systems LLMHub API key to use",
+        env="T_SYSTEMS_LLMHUB_API_KEY",
+    )
+    t_systems_llmhub_api_base: str | None = Field(
+        default="https://llm-server.llmhub.t-systems.net/v2",
+        description="The base URL for the T-Systems LLMHub API",
+        env="T_SYSTEMS_LLMHUB_BASE_URL",
+    )
+
+
 # We're using inheritance to flatten all the fields into a single class
 # Todo: Refactor API to nested structure
-class ProviderConfig(
-    BaseSettings, OpenAIConfig, GeminiConfig, OllamaConfig, AzureOpenAIConfig
+class ModelConfig(
+    BaseEnvConfig,
+    OpenAIConfig,
+    GeminiConfig,
+    OllamaConfig,
+    AzureOpenAIConfig,
+    TSystemsConfig,
 ):
     model_provider: str | None = Field(
         default=None,
@@ -90,3 +115,22 @@ class ProviderConfig(
         # Todo: Refactor API to nested structure, clean the unused fields in the respective classes
         if self.model_provider == "azure-openai":
             self.openai_api_key = None
+
+    @computed_field
+    @property
+    def configured(self) -> bool:
+        if self.model_provider == "openai":
+            return self.openai_api_key is not None
+        elif self.model_provider == "gemini":
+            return self.google_api_key is not None
+        elif self.model_provider == "ollama":
+            return True
+        elif self.model_provider == "azure-openai":
+            return True
+        elif self.model_provider == "t-systems":
+            return self.t_systems_llmhub_api_key is not None
+        return False
+
+    @classmethod
+    def get_config(cls) -> Self:
+        return ModelConfig()

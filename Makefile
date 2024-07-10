@@ -1,5 +1,5 @@
 export PYTHONPATH := ${PYTHONPATH}:./create_llama/backend
-export CREATE_LLAMA_VERSION=0.1.10
+export CREATE_LLAMA_VERSION=0.1.17
 export NEXT_PUBLIC_API_URL=/api/chat
 
 create-llama-app:
@@ -11,14 +11,14 @@ patch-chat: create-llama-app
 
 build-chat: patch-chat
 	@echo "\nBuilding Chat UI..."
-	cd ./create_llama/frontend && npm install && npm run build
+	cd ./create_llama/frontend && pnpm install && pnpm run build
 	@echo "\nCopying Chat UI to static folder..."
 	mkdir -p ./static && cp -r ./create_llama/frontend/out/* ./static/
 	@echo "\nDone!"
 
 build-admin:
 	@echo "\nBuilding Admin UI..."
-	cd ./admin && npm install && npm run build
+	cd ./admin && pnpm install && pnpm run build
 	@echo "\nCopying Admin UI to static folder..."
 	mkdir -p ./static/admin && cp -r ./admin/out/* ./static/admin/
 	@echo "\nDone!"
@@ -34,5 +34,5 @@ dev:
 	@export ENVIRONMENT=dev; \
 	trap 'kill 0' SIGINT; \
 	poetry run python main.py & \
-	npm run dev --prefix ./admin & \
+	pnpm --prefix ./admin run dev & \
 	wait

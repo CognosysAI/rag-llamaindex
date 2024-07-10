@@ -1,5 +1,48 @@
 # ragbox
 
+## 0.0.15
+
+### Patch Changes
+
+- b7b1f7f: Bump llama-index version to 0.10.53
+
+## 0.0.14
+
+### Patch Changes
+
+- 6c7f7aa: Add support for LlamaCloud
+
+## 0.0.13
+
+### Patch Changes
+
+- c7cbb6e: Bump create-llama version to 0.1.17
+- c7cbb6e: Add support for T-Systems provider
+
+## 0.0.12
+
+### Patch Changes
+
+- d901b4e: Add embedding model and base api config for OpenAI provider
+- debfe4e: Add loading state to forms
+- 0342480: Add custom tool prompt to system prompt
+
+## 0.0.11
+
+### Patch Changes
+
+- 1ceec37: Bump create-llama version to 0.1.13
+- 1ceec37: Add image generator tool
+
+## 0.0.10
+
+### Patch Changes
+
+- 4cfe656: Add OpenAPI tool config
+- 969374e: Add e2b code interpreter
+- 4cfe656: Bump create-llama version to 0.1.11
+- 4f178a6: Auto-submit forms on focus lost, clarified start up and improved UX for uploading files.
+
 ## 0.0.9
 
 ### Patch Changes

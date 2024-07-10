@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { BaseConfigSchema } from ".";
+import { BaseConfigSchema } from "./base";
 
 export const OllamaConfigSchema = BaseConfigSchema.extend({
-  model_provider: z.literal("ollama").nullable().optional(),
+  model_provider: z.literal("ollama"),
   ollama_base_url: z
     .string()
     .default("http://host.docker.internal:11434")

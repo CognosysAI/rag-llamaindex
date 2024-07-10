@@ -1,13 +1,27 @@
 import os
 import dotenv
+import re
 import yaml
 from pydantic import Field, validator
 from pydantic_settings import BaseSettings
 from typing import Dict, Tuple, List
 
-from src.models.tools import DuckDuckGoTool, WikipediaTool, Tools
-from src.models.env_config import get_config
-from src.constants import TOOL_CONFIG_FILE
+from src.models.tools import (
+    DuckDuckGoTool,
+    WikipediaTool,
+    OpenAPITool,
+    E2BInterpreterTool,
+    Tools,
+)
+from src.constants import TOOL_CONFIG_FILE, ENV_FILE_PATH, TOOL_CONFIG_FILE
+from src.models.tools import (
+    DuckDuckGoTool,
+    WikipediaTool,
+    OpenAPITool,
+    ImageGeneratorTool,
+    Tools,
+)
+from src.controllers.system_prompt import SystemPromptManager
 
 
 class ToolsManager:
@@ -26,6 +40,12 @@ class ToolsManager:
                 return DuckDuckGoTool(**kwargs)
             case "Wikipedia" | "wikipedia.WikipediaToolSpec" | "wikipedia":
                 return WikipediaTool(**kwargs)
+            case "OpenAPI" | "openapi.OpenAPIActionToolSpec" | "openapi":
+                return OpenAPITool(**kwargs)
+            case "E2BInterpreter" | "interpreter":
+                return E2BInterpreterTool(**kwargs)
+            case "ImageGenerator" | "image_generator":
+                return ImageGeneratorTool(**kwargs)
             case _:
                 raise ValueError(f"Tool {tool_name} not found")
 
@@ -39,9 +59,12 @@ class ToolsManager:
         # Add the tool to the config if it is enabled
         # Otherwise, remove it from the config
         if data.get("enabled"):
-            self.config[tool.tool_type][tool.name] = config
+            self.config[tool.tool_type][tool.config_id] = config
         else:
-            self.config[tool.tool_type].pop(tool.name)
+            if tool.config_id in self.config[tool.tool_type]:
+                self.config[tool.tool_type].pop(tool.config_id)
+        # Update the system prompts because the tool custom prompts have been updated
+        SystemPromptManager.update_system_prompts(tools=self.get_tools())
         self._update_config_file()
 
     @staticmethod
