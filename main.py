@@ -19,7 +19,7 @@ from src.routers.management.tools import tools_router
 from src.routers.management.loader import loader_router
 from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI(reload=True)
+app = FastAPI()
 init_settings()
 
 environment = os.getenv("ENVIRONMENT")
