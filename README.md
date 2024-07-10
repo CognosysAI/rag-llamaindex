@@ -26,6 +26,8 @@ Then, access the Admin UI at http://localhost:8000/admin to configure your RAGap
 
 You can use hosted AI models from OpenAI or Gemini, and local models using [Ollama](https://ollama.com/).
 
+> _Note_: To avoid [running into any errors](https://github.com/ragapp/ragapp/issues/22), we recommend using the latest version of Docker and (if needed) Docker Compose.
+
 ## Endpoints
 
 The docker container exposes the following endpoints:
@@ -36,7 +38,17 @@ The docker container exposes the following endpoints:
 
 > _Note_: The Chat UI and API are only functional if the RAGapp is configured.
 
-RAGapp doesn't come with any authentication layer by design. Just protect the `/admin` path in your cloud environment to secure your RAGapp.
+## Security
+
+### Authentication
+
+RAGapp doesn't come with any authentication layer by design. You'll have to protect the `/admin` and `/api/management` paths in your cloud environment to secure your RAGapp.
+This step heavily depends on your cloud provider and the services you use.
+A common way to do so using Kubernetes is to use an [Ingress Controller](https://kubernetes.github.io/ingress-nginx/examples/auth/basic/).
+
+### Authorization
+
+Later versions of RAGapp will support to restrict access based on access tokens forwarded from an API Gateway or similar.
 
 ## Deployment
 
@@ -54,6 +66,8 @@ If you don't specify the `MODEL` variable, the default model used is `phi3`, whi
 
 > _Note_: The `setup` container in the `docker-compose.yml` file will download the selected model into the [`ollama`](./ollama/) folder - this will take a few minutes.
 
+#### Specify the Ollama host
+
 Using the `OLLAMA_BASE_URL` environment variables, you can specify which Ollama host to use.
 If you don't specify the `OLLAMA_BASE_URL` variable, the default points to the Ollama instance started by Docker Compose (`http://ollama:11434`).
 
@@ -63,7 +77,13 @@ If you're running a local Ollama instance, you can choose to connect it to RAGap
 MODEL=llama3 OLLAMA_BASE_URL=http://host.docker.internal:11434 docker-compose up
 ```
 
-This is necessary if you're running RAGapp on macOS, as Docker for Mac does not support GPU acceleration.
+> _Note_: `host.docker.internal` is not available on Linux machines, you'll have to use `172.17.0.1` instead. For details see [Issue #78](https://github.com/ragapp/ragapp/issues/78).
+
+#### GPU acceleration
+
+Using a local Ollama instance is necessary if you're running RAGapp on macOS, as Docker for Mac does not support GPU acceleration.
+
+To enable Docker access to NVIDIA GPUs on Linux, [install the NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
 
 ### Kubernetes
 
@@ -82,3 +102,7 @@ make dev
 ## Contact
 
 Questions, feature requests or found a bug? [Open an issue](https://github.com/ragapp/ragapp/issues/new/choose) or reach out to [marcusschiesser](https://github.com/marcusschiesser).
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=ragapp/ragapp&type=Date)](https://star-history.com/#ragapp/ragapp&Date)

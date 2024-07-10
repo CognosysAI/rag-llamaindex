@@ -1,9 +1,7 @@
 from dotenv import load_dotenv
 from src.constants import ENV_FILE_PATH
 
-load_dotenv(
-    dotenv_path=ENV_FILE_PATH,
-)
+load_dotenv(dotenv_path=ENV_FILE_PATH, verbose=False)
 
 import os
 import logging
@@ -15,13 +13,17 @@ from create_llama.backend.app.settings import init_settings
 from create_llama.backend.app.api.routers.chat import chat_router
 from src.routers.management.config import config_router
 from src.routers.management.files import files_router
+from src.routers.management.llamacloud import llamacloud_router
 from src.routers.management.tools import tools_router
+from src.routers.management.loader import loader_router
+from src.models.model_config import ModelConfig
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 init_settings()
 
 environment = os.getenv("ENVIRONMENT")
+print(environment)
 if environment == "dev":
     app.add_middleware(
         CORSMiddleware,
@@ -32,17 +34,19 @@ if environment == "dev":
     )
 
 # Add chat router from create_llama/backend
-app.include_router(chat_router, prefix="/api/chat")
+app.include_router(chat_router, prefix="/api/chat", tags=["Chat"])
 app.include_router(config_router, prefix="/api/management/config")
-app.include_router(files_router, prefix="/api/management/files")
-app.include_router(tools_router, prefix="/api/management/tools")
+app.include_router(tools_router, prefix="/api/management/tools", tags=["Agent"])
+app.include_router(files_router, prefix="/api/management/files", tags=["Knowledge"])
+app.include_router(
+    llamacloud_router, prefix="/api/management/llamacloud", tags=["Llamacloud"]
+)
+app.include_router(loader_router, prefix="/api/management/loader", tags=["Knowledge"])
 
 
 @app.get("/")
 async def redirect():
-    from src.models.env_config import get_config
-
-    config = get_config()
+    config = ModelConfig.get_config()
     if config.configured:
         # system is configured - / points to chat UI
         return FileResponse("static/index.html")
@@ -51,12 +55,29 @@ async def redirect():
         return RedirectResponse(url="/admin/#new")
 
 
-app.mount("/api/data", StaticFiles(directory="data"), name="static")
-app.mount("", StaticFiles(directory="static", html=True), name="static")
+# Mount the data files to serve the file viewer
+app.mount(
+    "/api/files/data",
+    StaticFiles(directory="data", check_dir=False),
+)
+
+# Mount the output files from tools
+app.mount(
+    "/api/files/tool-output",
+    StaticFiles(directory="tool-output", check_dir=False),
+)
+
+# Mount the frontend static files
+# app.mount(
+#     "",
+#     StaticFiles(directory="static", check_dir=False, html=True),
+# )
 
 if __name__ == "__main__":
     app_host = os.getenv("APP_HOST", "0.0.0.0")
     app_port = int(os.getenv("APP_PORT", "8000"))
     reload = environment == "dev"
 
-    uvicorn.run(app="main:app", host=app_host, port=app_port, reload=reload)
+    uvicorn.run(
+        app="main:app", host=app_host, port=app_port, reload=reload, loop="asyncio"
+    )

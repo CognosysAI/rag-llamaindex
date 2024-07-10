@@ -1,8 +1,3 @@
-/**
- * Path:
- * Removed the fixed height of the chat container.
- */
-
 import { Loader2 } from "lucide-react";
 import { useEffect, useRef } from "react";
 
@@ -40,14 +35,21 @@ export default function ChatMessages(
   }, [messageLength, lastMessage]);
 
   return (
-    <div className="w-full h-full rounded-xl bg-white p-4 shadow-xl border overflow-auto">
+    <div className="w-full rounded-xl bg-white p-4 shadow-xl pb-0">
       <div
-        className="flex flex-col gap-5 divide-y pb-4"
+        className="flex h-[50vh] flex-col gap-5 divide-y overflow-y-auto pb-4"
         ref={scrollableChatContainerRef}
       >
-        {props.messages.map((m) => (
-          <ChatMessage key={m.id} chatMessage={m} isLoading={props.isLoading} />
-        ))}
+        {props.messages.map((m, i) => {
+          const isLoadingMessage = i === messageLength - 1 && props.isLoading;
+          return (
+            <ChatMessage
+              key={m.id}
+              chatMessage={m}
+              isLoading={isLoadingMessage}
+            />
+          );
+        })}
         {isPending && (
           <div className="flex justify-center items-center pt-10">
             <Loader2 className="h-4 w-4 animate-spin" />

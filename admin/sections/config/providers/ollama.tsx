@@ -1,4 +1,4 @@
-import { fetchModels } from "@/client/config";
+import { fetchModels } from "@/client/providers";
 import {
   FormControl,
   FormDescription,
@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/use-toast";
-import { cn } from "@/lib/utils";
+import { Loader2 } from "lucide-react";
 import { UseFormReturn } from "react-hook-form";
 import { useQuery } from "react-query";
 import { ModelForm } from "./shared";
@@ -43,16 +43,17 @@ export const OllamaForm = ({
     isError,
   } = useQuery(
     ["models", form.getValues("ollama_base_url")],
-    () => fetchModels("ollama", form.getValues("ollama_base_url")),
+    () => {
+      const ollamaBaseUrl = form.getValues("ollama_base_url");
+      return ollamaBaseUrl && fetchModels("ollama", ollamaBaseUrl);
+    },
     {
       staleTime: 300000, // 5 minutes
       onError: (error: unknown) => {
         console.error("Failed to fetch Ollama models:", error);
         toast({
-          className: cn(
-            "top-0 right-0 flex fixed md:max-w-[420px] md:top-4 md:right-4 text-red-500",
-          ),
           title: "Failed to fetch Ollama models",
+          variant: "destructive",
           duration: 5000,
         });
       },
@@ -81,7 +82,34 @@ export const OllamaForm = ({
           </FormItem>
         )}
       />
-      {getLLMModels(models ?? []).length === 0 && !isLoading ? (
+      <FormField
+        control={form.control}
+        name="ollama_request_timeout"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Request timeout</FormLabel>
+            <FormControl>
+              <Input
+                type="number"
+                placeholder={defaultValues.ollama_request_timeout}
+                {...field}
+              />
+            </FormControl>
+            <FormDescription>
+              Timeout in seconds for Ollama API requests.
+            </FormDescription>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      {isLoading ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : isError ? (
+        <FormMessage>
+          Could not fetch Ollama models. Make sure the Ollama base URL is
+          accessible with RAGapp.
+        </FormMessage>
+      ) : getLLMModels(models ?? []).length === 0 ? (
         <FormMessage>
           There is no LLM model available using Ollama. <br />
           Please pull a Ollama LLM model from &nbsp;
@@ -89,11 +117,11 @@ export const OllamaForm = ({
             https://ollama.com/library
           </a>
         </FormMessage>
-      ) : getEmbeddingModels(models ?? []).length == 0 && !isLoading ? (
+      ) : getEmbeddingModels(models ?? []).length == 0 ? (
         <>
           <ModelForm
             form={form}
-            defaultValues={defaultValues}
+            defaultValue={defaultValues.model}
             supportedModels={getLLMModels(models ?? [])}
           />
           <FormMessage>
@@ -112,7 +140,7 @@ export const OllamaForm = ({
       ) : (
         <ModelForm
           form={form}
-          defaultValues={defaultValues}
+          defaultValue={defaultValues.model}
           supportedModels={getLLMModels(models ?? [])}
         />
       )}

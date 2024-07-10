@@ -3,9 +3,7 @@
 import { useChat } from "ai/react";
 import { ChatInput, ChatMessages } from "./ui/chat";
 
-type ChatUILayout = "default" | "fit";
-
-export default function ChatSection({ layout }: { layout?: ChatUILayout }) {
+export default function ChatSection() {
   const {
     messages,
     input,
@@ -19,16 +17,15 @@ export default function ChatSection({ layout }: { layout?: ChatUILayout }) {
     headers: {
       "Content-Type": "application/json", // using JSON because of vercel/ai 2.2.26
     },
-    onError: (error) => {
+    onError: (error: unknown) => {
+      if (!(error instanceof Error)) throw error;
       const message = JSON.parse(error.message);
       alert(message.detail);
     },
   });
 
   return (
-    <div
-      className={`flex flex-col space-y-4 justify-between w-full pb-4 ${layout === "fit" ? "h-full p-2" : "max-w-5xl h-[50vh]"}`}
-    >
+    <div className="space-y-4 max-w-5xl w-full">
       <ChatMessages
         messages={messages}
         isLoading={isLoading}
