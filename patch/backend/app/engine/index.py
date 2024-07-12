@@ -33,14 +33,14 @@ def get_llama_cloud_index():
     return index
 
 
-def get_index():
+def get_index(user_id: str):
     use_llama_cloud = os.getenv("USE_LLAMA_CLOUD", "false").lower() == "true"
     if use_llama_cloud:
         logger.info("Connecting to LlamaCloud...")
         return get_llama_cloud_index()
     else:
         logger.info("Connecting vector store...")
-        store = get_vector_store()
+        store = get_vector_store(user_id)
         # Load the index from the vector store
         # If you are using a vector store that doesn't store text,
         # you must load the index from both the vector store and the document store

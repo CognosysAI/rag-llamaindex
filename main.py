@@ -22,9 +22,12 @@ from fastapi.middleware.cors import CORSMiddleware
 app = FastAPI()
 init_settings()
 
+# enable helicone
+HELICONE_API_KEY = os.getenv("HELICONE_API_KEY")
+os.environ["OPENAI_API_BASE"] = f"https://oai.helicone.ai/{HELICONE_API_KEY}/v1"
+
 environment = os.getenv("ENVIRONMENT")
-print(environment)
-if environment == "dev":
+if True:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
